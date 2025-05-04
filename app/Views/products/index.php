@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <title>Productos - Home</title>
     <link rel="stylesheet" href="<?= base_url('css/indexProduct.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/modal.css') ?>">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
 <body>
 
@@ -35,28 +37,30 @@
             <th></th>
         </tr>
         </thead>
-        <tbody>
-        <?php if (!empty($products)): ?>
-            <?php foreach ($products as $product): ?>
-                <tr>
-                    <td><?= esc($product->id) ?></td>
-                    <td><?= esc($product->title) ?></td>
-                    <td><?= esc($product->price) ?></td>
-                    <td><?= esc($product->created_at) ?></td>
-                    <td>
-                        <button class="btn-edit delete"  data-id="<?= esc($product->id) ?>">Editar</button>
-                        <button class="btn-delete edit"  data-id="<?= esc($product->id) ?>">Eliminar</button>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <tr>
-                <td colspan="4">No hay productos disponibles.</td>
-            </tr>
-        <?php endif; ?>
+        <tbody id="product-table-body">
         </tbody>
     </table>
 </section>
+
+<div id="editModal" style="display:none;" class="modal-container">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Editar producto</h3>
+            <button class="modal-close" id="closeModal">X</button>
+        </div>
+
+            <label for="edit-title">Título:</label>
+            <input type="text" id="edit-title" required>
+
+            <label for="edit-price">Precio:</label>
+            <input type="number" id="edit-price" required>
+
+            <div class="modal-actions">
+                <button class="btn-save" id="editProduct" data-id="">Guardar</button>
+                <button type="button" class="btn-cancel" id="cancelModal">Cancelar</button>
+            </div>
+    </div>
+</div>
 
 <script src="<?= base_url('build/bundle.js') ?>"></script>
 <script>
@@ -64,6 +68,7 @@
     const csrfName = '<?= csrf_token() ?>';
     const productUrlEdit = '<?= base_url('products/edit') ?>';
     const productUrlDelete = '<?= base_url('products/delete') ?>';
+    const getProductsUrl = '<?= base_url('getProducts') ?>';
 </script>
 </body>
 </html>

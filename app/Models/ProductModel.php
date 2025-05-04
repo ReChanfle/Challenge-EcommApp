@@ -50,7 +50,7 @@ class ProductModel extends Model
 
             $filtered = array_values($filtered);
 
-            //file_put_contents($path, json_encode($filtered, JSON_PRETTY_PRINT));
+            file_put_contents($path, json_encode($filtered, JSON_PRETTY_PRINT));
 
             return true;
         }
@@ -61,6 +61,43 @@ class ProductModel extends Model
 
 
 
+    }
+
+    public static function editFromJson($productData): ?bool
+    {
+        $path = WRITEPATH . '../app/Database/products.json';
+
+        if (!file_exists($path)) {
+            return null;
+        }
+
+
+
+        try {
+            $json = file_get_contents($path);
+            $products = json_decode($json, true);
+
+            $found = false;
+
+            foreach ($products as &$product) {
+                if ($productData['id'] == $product['id']) {
+                    $product['title'] = $productData['title'] ?? $product['title'];
+                    $product['price'] = $productData['price'] ?? $product['price'];
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                throw new Exception('Producto no encontrado', 404);
+            }
+
+            file_put_contents($path, json_encode($products, JSON_PRETTY_PRINT));
+
+            return true;
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage(), 500, $e);
+        }
     }
 
 
