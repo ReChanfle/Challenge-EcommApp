@@ -8,6 +8,11 @@ use CodeIgniter\HTTP\ResponseInterface;
 class ProductController extends BaseController
 {
 
+    /**
+     * Displays the main products view.
+     *
+     * @return string
+     */
     public function index(): string
     {
 
@@ -15,26 +20,43 @@ class ProductController extends BaseController
 
     }
 
+    /**
+     * Retrieves a list of products from a JSON file, with optional filters.
+     *
+     * @return ResponseInterface
+     */
     public function getProducts(): ResponseInterface
     {
 
         try {
-            $products = ProductModel::getFromJson();
-            return $this->response->setStatusCode(200)->setJSON(['payload' => $products, 'message' => 'Product eliminado correctamente.'],
+
+            $filters = $this->request->getGet();
+
+            $products = ProductModel::getFromJson( $filters);
+            return $this->response->setStatusCode(200)->setJSON(['payload' => $products, 'message' => 'Product obtenidos.'],
             );
         } catch (\Exception $e) {
-            return $this->response->setStatusCode(400)->setJSON(['message' => $e->getMessage()]);
+            return $this->response
+                ->setStatusCode(400)
+                ->setHeader('Content-Type', 'application/json')
+                ->setBody(json_encode(['message' => $e->getMessage()]));
         }
 
 
     }
 
-    public function delete($id): ResponseInterface
+    /**
+     * Deletes a specific product by ID from the JSON file.
+     *
+     * @param int $id The ID of the product to delete.
+     * @return ResponseInterface
+     */
+    public function delete(int $id): ResponseInterface
     {
 
         try {
             ProductModel::deleteFromJson($id);
-            return $this->response->setStatusCode(200)->setJSON(['message' => 'Product eliminado correctamente.'],
+            return $this->response->setStatusCode(200)->setJSON(['message' => 'Producto eliminado correctamente.'],
             );
         } catch (\Exception $e) {
             return $this->response->setStatusCode(400)->setJSON(['message' => $e->getMessage()]);
@@ -43,21 +65,55 @@ class ProductController extends BaseController
 
     }
 
-    public function edit(): ResponseInterface
+    /**
+     * Updates an existing product in the JSON file.
+     * Validates the data before updating.
+     *
+     * @return ResponseInterface
+     */
+    public function update(): ResponseInterface
     {
-        //agregar validacion
+
+        if (! $this->validate(ProductModel::$rules)) {
+            return $this->response->setStatusCode(400)->setJSON(['message' => $this->validator->getErrors()]);
+        }
 
 
         $product = $this->request->getJSON(true);
 
-        log_message('info', 'Request body: ' . json_encode($this->request->getRawInput()));
 
         try {
             ProductModel::editFromJson($product);
-            return $this->response->setStatusCode(200)->setJSON(['message' => 'Producto con ID $id editado correctamente.'],
+            return $this->response->setStatusCode(200)->setJSON(['message' => 'Producto con ID: '.  $product['id'].' editado correctamente.'],
             );
         } catch (\Exception $e) {
             return $this->response->setStatusCode(400)->setJSON(['message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Creates a new product and saves it to the JSON file.
+     * Validates the data before creation.
+     *
+     * @return ResponseInterface
+     */
+    public function create(): ResponseInterface
+    {
+
+        if (! $this->validate(ProductModel::$rules)) {
+            return $this->response->setStatusCode(400)->setJSON(['message' => $this->validator->getErrors()]);
+        }
+
+        $product = $this->request->getJSON(true);
+
+
+        try {
+            ProductModel::createFromJson($product);
+            return $this->response->setStatusCode(200)->setJSON(['message' => 'Producto creado correctamente.'],
+            );
+        } catch (\Exception $e) {
+            return $this->response->setStatusCode(400)->setJSON(['message' => $e->getMessage()]);
+        }
+
     }
 }

@@ -4,16 +4,30 @@ namespace App\Controllers;
 
 use App\Models\UsersModel;
 use CodeIgniter\HTTP\RedirectResponse;
-use mysql_xdevapi\Exception;
+use Exception;
+
 
 class HomeController extends BaseController
 {
 
+    /**
+     * Displays the login view.
+     *
+     * @return string
+     */
     public function index(): string
     {
         return view('index');
     }
 
+    /**
+     * Handles the user login process.
+     * Validates user input and attempts to store the user in the JSON file.
+     * Redirects to the products page on success.
+     *
+     * @return RedirectResponse|string Returns a redirect on success or the login view with validation errors.
+     * @throws Exception If an error occurs during user storage.
+     */
     public function login(): RedirectResponse|string
     {
 
@@ -25,7 +39,7 @@ class HomeController extends BaseController
         $password = $this->request->getPost('password');
 
         try {
-            $user = UsersModel::setToJson( $username, $password);
+            UsersModel::setToJson($username, $password);
 
             return redirect()->to('/products');
         }

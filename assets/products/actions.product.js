@@ -1,18 +1,71 @@
+user = null;
 
 
-
+/**
+ * Manages product-related operations in the application, including rendering,
+ * editing, deleting, and filtering products, as well as user session handling.
+ */
 class Product {
 
+
+    /**
+     * Initializes the Product class, binds event listeners, and triggers data fetching.
+     */
     constructor() {
-        this.getProductIdOnClickDelete();
+        this.manageProductActions();
         this.editProduct();
+        this.filters();
         $(document).ready(() => {
             this.getProducts();
+            this.getUser();
+
         });
     }
 
 
-    async getProductIdOnClickDelete() {
+    /**
+     * Retrieves the user from localStorage and updates the UI accordingly.
+     */
+    getUser() {
+
+        const self = this;
+
+        self.user = localStorage.getItem('user');
+        const userElement = $('#user');
+
+        if (!self.user || self.user === 'null') {
+            userElement.text('Ingresar');
+        } else {
+            try {
+                const user = JSON.parse(self.user);
+                userElement.text(`👤 ${user}`);
+            } catch (e) {
+                userElement.text('Usuario inválido');
+            }
+        }
+
+        userElement.click(function () {
+
+            if (!self.user || self.user === 'null') {
+                window.location.href = landingUrl;
+            } else {
+              self.openModal('sessionModal');
+
+              $('#logout').click(function () {
+                  localStorage.removeItem('user');
+                  window.location.href = landingUrl;
+              })
+            }
+        });
+
+    }
+
+
+    /**
+     * Sets up event listeners for adding, editing, and deleting products,
+     * as well as handling modal interactions.
+     */
+    async manageProductActions() {
 
         const self = this;
 
@@ -39,7 +92,7 @@ class Product {
 
         });
 
-        $(document).on('click', '.btn-edit', async function (e) {
+        $(document).on('click', '.btn-edit', function (e) {
 
 
             const productId = e.target.dataset.id;
@@ -47,24 +100,46 @@ class Product {
             const title = row.children[1].textContent;
             const price = row.children[2].textContent;
 
-            document.getElementById('editProduct').setAttribute('data-id', productId);
+            document.getElementById('submitProduct').setAttribute('data-id', productId);
             document.getElementById('edit-title').value = title;
             document.getElementById('edit-price').value = price;
 
-            document.getElementById('editModal').style.display = 'flex';
+            document.getElementById('manageProductModal').style.display = 'flex';
 
-            self.openModal();
+            self.openModal('manageProductModal');
+            document.getElementById('modal-title').textContent = 'Editar producto';
+
+
+        });
+
+        $(document).on('click', '.btn-add', function (e) {
+
+
+            document.getElementById('submitProduct').removeAttribute('data-id');
+            document.getElementById('edit-title').value = '';
+            document.getElementById('edit-price').value = '';
+
+            document.getElementById('manageProductModal').style.display = 'flex';
+            self.openModal('manageProductModal');
+
+            document.getElementById('modal-title').textContent = 'Agregar producto';
 
 
         })
 
-        document.getElementById('closeModal').onclick = self.closeModal;
-        document.getElementById('cancelModal').onclick = self.closeModal;
+        document.getElementById('closeModalProduct').onclick = () => self.closeModal('manageProductModal');
+        document.getElementById('cancelModalProduct').onclick = () => self.closeModal('manageProductModal');
+        document.getElementById('closeModalUser').onclick = () => self.closeModal('sessionModal');
+        document.getElementById('cancelModalUser').onclick = () => self.closeModal('sessionModal');
 
     }
 
-    closeModal() {
-        const modal = document.getElementById('editModal');
+    /**
+     * Closes the specified modal by removing the display and transition classes.
+     * @param {string} modalName - The ID of the modal to close.
+     */
+    closeModal(modalName) {
+        const modal = document.getElementById(modalName);
         modal.classList.remove('show');
 
 
@@ -73,8 +148,12 @@ class Product {
         }, 300);
     }
 
-    openModal() {
-        const modal = document.getElementById('editModal');
+    /**
+     * Opens the specified modal by adding display and transition classes.
+     * @param {string} modalName - The ID of the modal to open.
+     */
+    openModal(modalName) {
+        const modal = document.getElementById(modalName);
         modal.style.display = 'flex';
 
         setTimeout(() => {
@@ -82,16 +161,58 @@ class Product {
         }, 10);
     }
 
-    showToast(message = 'Acción realizada') {
-        const toast = document.getElementById('toast');
+    /**
+     * Displays a toast notification with a given message.
+     * @param {string} message - The message to display in the toast.
+     */
+    showToast(message) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.classList.add('toast');
+
+
         toast.textContent = message;
-        toast.classList.add('show');
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+
 
         setTimeout(() => {
             toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 500);
         }, 3000);
     }
 
+
+    /**
+     * Displays toast messages based on validation error responses.
+     * @param {Object} errors - The error response object containing validation messages.
+     */
+    toastValidation(errors) {
+
+        const self = this;
+
+        if (errors && errors.message && typeof errors.message === 'object') {
+            for (let field in errors.message) {
+                if (errors.message.hasOwnProperty(field)) {
+                    self.showToast(errors.message[field].toString());
+                }
+            }
+        } else {
+
+            self.showToast('Ha ocurrido un error desconocido.');
+        }
+    }
+
+    /**
+     * Renders the list of products in the table body.
+     * @param {Object} data - The response data containing a product payload.
+     */
     renderProducts(data) {
 
         const self = this;
@@ -100,7 +221,7 @@ class Product {
         tbody.innerHTML = '';
 
         if (data.length === 0) {
-           self.showToast('No hay productos registrados');
+            self.showToast('No hay productos registrados');
             return;
         }
 
@@ -108,15 +229,17 @@ class Product {
             const row = document.createElement('tr');
 
             row.innerHTML = `
-            <td>${product.id}</td>
-            <td>${product.title}</td>
-            <td>${product.price}</td>
-            <td>${product.created_at}</td>
-            <td>
+        <td>${product.id}</td>
+        <td>${product.title}</td>
+        <td>${product.price}</td>
+        <td>${product.created_at}</td>
+        <td>
+            ${self.user ? `
                 <button class="btn-edit edit" data-id="${product.id}">Editar</button>
                 <button class="btn-delete delete" data-id="${product.id}">Eliminar</button>
-            </td>
-        `;
+            ` : 'Sin permisos'}
+        </td>
+    `;
 
             tbody.appendChild(row);
         });
@@ -124,40 +247,95 @@ class Product {
 
     }
 
+    /**
+     * Binds search and clear filter events to filter products dynamically.
+     */
+    filters() {
+
+        const self =this;
+
+        $('.search-filtered').click(async function () {
+
+            const id = $('#search-id').val();
+            const title = $('#search-title').val();
+            const price = $('#search-price').val();
+
+            const query = new URLSearchParams({
+                id,
+                title,
+                price
+            }).toString();
+
+            const url = `${getFilteredProductsUrl}?${query}`;
+
+            const response = await self.fetchData(url, null);
+
+            self.renderProducts(response);
+
+
+
+        })
+
+        $('.clean-filters').click(function () {
+
+           $('#search-id').val('');
+           $('#search-title').val('');
+           $('#search-price').val('');
+
+           self.getProducts();
+
+        })
+
+    }
+
+    /**
+     * Handles submission of new or edited product data and updates the product list.
+     */
     editProduct() {
 
         const self = this;
 
-       $('#editProduct').click(async function (e) {
+        $('#submitProduct').click(async function (e) {
 
+            const productId = e.target.dataset.id;
+            let url = null;
+            let body = {}
 
-           const productId = e.target.dataset.id;
+            if (!productId) {
+                url = productUrlCreate;
+                body.title = document.getElementById('edit-title').value;
+                body.price = document.getElementById('edit-price').value;
+            }
 
-           const url = productUrlEdit
+            else {
+                url = productUrlUpdate;
+                body.title = document.getElementById('edit-title').value;
+                body.price = document.getElementById('edit-price').value;
+                body.id = productId;
+            }
 
-           const params = {
-               method: 'POST',
-               headers: {
-                   'Content-Type': 'application/json',
-                   'X-CSRF-Token': csrfToken
-               },
-               body: JSON.stringify({
-                   id: productId,
-                   title: document.getElementById('edit-title').value,
-                   price: document.getElementById('edit-price').value
-               })
+            const params = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify(body)
 
-           };
+            };
 
-           const response = await self.fetchData(url, params);
-           self.showToast(response.message);
-           await self.getProducts();
-           self.closeModal();
-       })
+            const response = await self.fetchData(url, params);
+            self.showToast(response.message);
+            await self.getProducts();
+            self.closeModal('manageProductModal');
+        })
 
     }
 
 
+    /**
+     * Fetches all products from the backend and renders them in the UI.
+     */
     async getProducts() {
 
         const self = this;
@@ -177,11 +355,16 @@ class Product {
         self.renderProducts(response);
 
 
-
     }
 
 
-
+    /**
+     * Sends a fetch request with the given parameters and handles success/error.
+     * @param {string} url - The URL to send the request to.
+     * @param {Object|null} params - The fetch options such as method, headers, and body.
+     * @returns {Promise<Object>} - The parsed JSON response from the server.
+     * @throws {Error} - If the response status is not OK or fetch fails.
+     */
     async fetchData(url, params) {
 
         const self = this;
@@ -194,13 +377,12 @@ class Product {
             else {
                 const responseData = await response.json();
                 const errorMessage = responseData.message || 'Error desconocido';
-                self.showToast(errorMessage);
+                self.toastValidation(responseData);
                 throw new Error(response.status + ' ' + errorMessage);
 
             }
 
         } catch (error) {
-            self.showToast(error);
             console.error('Error en la consulta del producto:', error);
             throw error;
         }

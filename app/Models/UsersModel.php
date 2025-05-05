@@ -18,7 +18,7 @@ class UsersModel extends Model
 
     public static function setToJson(string $username, string $password): string|null
     {
-        $path = WRITEPATH . '../app/Database/users.json';
+        $path = WRITEPATH . 'users.json';
         if (!file_exists($path)) {
             return null;
         }
