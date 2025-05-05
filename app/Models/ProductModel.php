@@ -82,6 +82,7 @@ class ProductModel extends Model
 
 
         $path = WRITEPATH . './products.json';
+        $logFile = WRITEPATH . 'logs/product_deletions.log';
 
         if (!file_exists($path)) {
             return null;
@@ -102,6 +103,8 @@ class ProductModel extends Model
             $filtered = array_values($filtered);
 
             file_put_contents($path, json_encode($filtered, JSON_PRETTY_PRINT));
+
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Deleting product ID: {$id}\n", FILE_APPEND);
 
             return true;
         }
@@ -124,12 +127,11 @@ class ProductModel extends Model
     public static function editFromJson(array $productData): ?bool
     {
         $path = WRITEPATH . './products.json';
+        $logFile = WRITEPATH . 'logs/product_editions.log';
 
         if (!file_exists($path)) {
             return null;
         }
-
-
 
         try {
             $json = file_get_contents($path);
@@ -137,7 +139,7 @@ class ProductModel extends Model
 
             $found = false;
 
-            foreach ($products as &$product) {
+            foreach ($products as $product) {
                 if ($productData['id'] == $product['id']) {
                     $product['title'] = $productData['title'] ?? $product['title'];
                     $product['price'] = $productData['price'] ?? $product['price'];
@@ -151,6 +153,8 @@ class ProductModel extends Model
             }
 
             file_put_contents($path, json_encode($products, JSON_PRETTY_PRINT));
+
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Editing product ID: {$productData['id']}\n", FILE_APPEND);
 
             return true;
         } catch (Exception $e) {
@@ -171,6 +175,7 @@ class ProductModel extends Model
     public static function createFromJson(array $productData): ?bool
     {
         $path = WRITEPATH . './products.json';
+        $logFile = WRITEPATH . 'logs/product_creations.log';
 
         if (!file_exists($path)) {
             return null;
@@ -201,6 +206,8 @@ class ProductModel extends Model
             $products[] = $newProduct;
 
             file_put_contents($path, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - Creating product ID: {$newProduct['id']}\n", FILE_APPEND);
 
             return true;
         } catch (Exception $e) {
