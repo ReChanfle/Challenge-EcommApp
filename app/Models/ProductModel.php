@@ -139,7 +139,7 @@ class ProductModel extends Model
 
             $found = false;
 
-            foreach ($products as $product) {
+            foreach ($products as &$product) {
                 if ($productData['id'] == $product['id']) {
                     $product['title'] = $productData['title'] ?? $product['title'];
                     $product['price'] = $productData['price'] ?? $product['price'];
